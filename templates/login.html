@@ -2,15 +2,15 @@
 {% block title %}تسجيل دخول المدير{% endblock %}
 
 {% block content %}
-<div class="min-h-screen flex items-center justify-center bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
+<div class="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
     <div class="w-full max-w-md space-y-8">
         
         <h1 class="text-4xl md:text-5xl font-extrabold text-center text-primary mb-4">
             منيو الديوان
         </h1>
 
-        <div class="bg-white p-8 md:p-10 rounded-xl shadow-2xl">
-            <h2 class="text-3xl font-extrabold text-center text-gray-800 mb-6">
+        <div class="bg-white dark:bg-gray-800 p-8 md:p-10 rounded-xl shadow-2xl">
+            <h2 class="text-3xl font-extrabold text-center text-gray-800 dark:text-gray-100 mb-6">
                 تسجيل دخول المدير
             </h2>
             
@@ -28,13 +28,13 @@
                     <div>
                         <label for="username" class="sr-only">اسم المستخدم</label>
                         <input id="username" name="username" type="text" autocomplete="username" required 
-                               class="appearance-none rounded-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-primary focus:border-primary focus:z-10 sm:text-sm" 
+                               class="appearance-none rounded-none relative block w-full px-3 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-primary focus:border-primary focus:z-10 sm:text-sm" 
                                placeholder="اسم المستخدم">
                     </div>
                     <div>
                         <label for="password" class="sr-only">كلمة المرور</label>
                         <input id="password" name="password" type="password" autocomplete="current-password" required 
-                               class="appearance-none rounded-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-primary focus:border-primary focus:z-10 sm:text-sm" 
+                               class="appearance-none rounded-none relative block w-full px-3 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-primary focus:border-primary focus:z-10 sm:text-sm" 
                                placeholder="كلمة المرور">
                     </div>
                 </div>

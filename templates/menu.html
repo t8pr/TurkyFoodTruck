@@ -1,128 +1,122 @@
 {% extends 'layout.html' %}
-{% block title %}قائمة منيو الديوان{% endblock %}
 
 {% block content %}
-<!-- 
-    *** CHANGE ***
-    Updated header for dark mode.
--->
-<header class="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-40">
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between items-center h-20">
-            <!-- Logo/Truck Name -->
-            <div class="text-3xl font-bold">
-                <span class="text-primary">منيو</span>
-                <!-- *** NEW *** Dark mode text color -->
-                <span class="text-gray-800 dark:text-white">الديوان</span>
-            </div>
-            
-            <!-- Category Navigation -->
-            <nav class="hidden md:flex space-x-4 space-x-reverse">
+<!-- Header -->
+<header class="bg-gradient-to-l from-primary to-purple-600 dark:from-primary dark:to-purple-800 text-white shadow-lg sticky top-0 z-50">
+    <div class="container mx-auto max-w-6xl p-4 flex justify-between items-center">
+        <h1 class="text-3xl md:text-4xl font-extrabold">
+            منيو الديوان
+        </h1>
+        
+        <!-- 1. Desktop Category Links -->
+        <nav class="hidden md:flex space-x-reverse space-x-4">
+            {% for category in categories %}
+                <a href="#category-{{ loop.index }}" class="text-lg font-medium text-white text-opacity-80 hover:text-opacity-100 transition-opacity">
+                    {{ category }}
+                </a>
+            {% endfor %}
+        </nav>
+
+        <!-- 2. *** NEW: Mobile Dropdown Menu *** -->
+        <!-- This select menu appears only on mobile (md:hidden) -->
+        <div class="md:hidden">
+            <select style="color: #1b1b1b;" onchange="if (this.value) window.location.href=this.value;" 
+                    class="bg-white/20 border-0 text-white text-sm font-medium rounded-lg focus:ring-primary focus:border-primary block w-full p-2.5">
+                <option value="#" selected>الانتقال إلى قسم...</option>
                 {% for category in categories %}
-                    <!-- *** NEW *** Dark mode text color -->
-                    <a style=font-size:17px; href="#category-{{ loop.index }}" class="text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary-300 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                    <option value="#category-{{ loop.index }}">
                         {{ category }}
-                    </a>
+                    </option>
                 {% endfor %}
-            </nav>
-            
-            <!-- Mobile Menu Button (Optional, if you want a burger menu) -->
-            <div class="md:hidden">
-                <!-- You could add a burger menu button here -->
-            </div>
+            </select>
         </div>
+        
     </div>
 </header>
 
-<!-- Main Menu Content -->
-<main class="container mx-auto p-4 sm:p-6 lg:px-8">
+<!-- Main Content -->
+<main class="container mx-auto max-w-6xl p-4 md:p-8">
 
-    {% for category in categories %}
-        <!-- Category Section -->
-        <!-- We add 'pt-24 -mt-24' for smooth anchor link scrolling -->
-        <section id="category-{{ loop.index }}" class="pt-24 -mt-24 mb-12">
+    {% if not categories %}
+        <div class="text-center text-gray-500 dark:text-gray-400 mt-20">
+            <h2 class="text-3xl font-bold">القائمة فارغة حالياً</h2>
+            <p class="text-lg mt-2">يرجى العودة لاحقاً، نعمل على إضافة منتجات شهية!</p>
+        </div>
+    {% endif %}
+
+    <!-- Category Sections -->
+    {% for category, products in categories.items() %}
+    <section id="category-{{ loop.index }}" class="mb-12 pt-16 -mt-16"> <!-- Added padding for anchor jump -->
+        <h2 class="text-4xl font-extrabold text-gray-800 dark:text-white mb-6 border-b-4 border-primary pb-2 inline-block">
+            {{ category }}
+        </h2>
+        
+        <!-- Product Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             
-            <!-- 
-                *** CHANGE ***
-                Updated sticky category header for dark mode.
-            -->
-            <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-6 sticky top-20 z-30 py-3 bg-gray-50 dark:bg-gray-900 transition-colors">
-                {{ category }}
-            </h2>
-
-            <!-- 
-                *** CHANGE ***
-                Made grid denser to make boxes "smaller".
-                Changed 'lg:grid-cols-3' to 'lg:grid-cols-4'.
-            -->
-            <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {% for product in products %}
+            <!-- Product Card -->
+            <div class="product-card bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden flex flex-col transition-all duration-300 hover:shadow-2xl hover:scale-[1.03]">
                 
-                <!-- 
-                    *** THE FIX IS HERE ***
-                    We changed 'products[category]' to 'categories[category]'.
-                    The 'products' variable did not exist here, but 'categories' does.
-                -->
-                {% for product in categories[category] %}
+                <!-- Product Image -->
+                <div class="h-48 w-full overflow-hidden">
                     <!-- 
-                        *** CHANGE ***
-                        - Added dark mode background: dark:bg-gray-800
-                        - Added hover effect: transition-transform duration-200 hover:scale-[1.03]
-                        - Reduced padding: p-4
+                        *** THE IMAGE FIX ***
+                        Changed 'class-' to 'class=' 
                     -->
-                    <div class="product-card bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden transition-transform duration-200 hover:scale-[1.03]">
-                        <img class="w-full h-40 object-cover" 
-                             src="{% if product.image_path.startswith('http') %}{{ product.image_path }}{% else %}{{ url_for('static', filename=product.image_path) }}{% endif %}" 
-                             alt="{{ product.name }}"
-                             onerror="this.src='https://placehold.co/400x300/7838e9/ffffff?text={{ product.name }}'; this.onerror=null;">
-                        
-                        <!-- 
-                            *** CHANGE ***
-                            - Reduced padding
-                            - Added dark mode text colors
-                        -->
-                        <div class="p-4">
-                            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-1">{{ product.name }}</h3>
-                            <p class="text-gray-600 dark:text-gray-400 text-sm mb-3 min-h-[40px]">{{ product.description }}</p>
-                            <div class_name="flex justify-between items-center">
-                                <span class="text-lg font-bold text-primary dark:text-primary-300">
-                                    ${{ "%.2f"|format(product.price|float) }}
-                                </span>
-                            </div>
-                        </div>
+                    <img class="h-full w-full object-cover" 
+                         src="{{ product.image_path }}" 
+                         alt="{{ product.name }}"
+                         onerror="this.src='{{ DEFAULT_IMAGE_URL }}'; this.onerror=null;">
+                </div>
+                
+                <!-- Product Info -->
+                <div class="p-4 flex flex-col flex-grow">
+                    <div class="flex-grow">
+                        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-1">{{ product.name }}</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4 h-10 overflow-hidden">
+                            {{ product.description }}
+                        </p>
                     </div>
-                {% endfor %}
+                    
+                    <!-- Price -->
+                    <div class="flex justify-between items-center mt-4">
+                        <span class="text-2xl font-extrabold text-primary dark:text-primary-300">
+                            {{ "%.2f"|format(product.price|float) }}
+                        </span>
+                        <span class="text-lg font-bold text-gray-700 dark:text-gray-300">
+                            ريال
+                        </span>
+                    </div>
+                </div>
             </div>
-        </section>
+            <!-- End Product Card -->
+            {% endfor %}
+
+        </div>
+    </section>
     {% endfor %}
+
 </main>
 
 <script>
-    // Intersection Observer for fade-in effect
+    // JavaScript for fade-in-on-scroll animation
     document.addEventListener('DOMContentLoaded', () => {
-        const productCards = document.querySelectorAll('.product-card');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('is-visible');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, {
+            rootMargin: '0px',
+            threshold: 0.1
+        });
 
-        if ("IntersectionObserver" in window) {
-            const observer = new IntersectionObserver((entries, observer) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add('is-visible');
-                        observer.unobserve(entry.target);
-                    }
-                });
-            }, {
-                rootMargin: '0px 0px -50px 0px', // Start animation 50px before it's in view
-                threshold: 0.1
-            });
-
-            productCards.forEach(card => {
-                observer.observe(card);
-            });
-        } else {
-            // Fallback for very old browsers
-            productCards.forEach(card => {
-                card.classList.add('is-visible');
-            });
-        }
+        document.querySelectorAll('.product-card').forEach(card => {
+            observer.observe(card);
+        });
     });
 </script>
 {% endblock %}
