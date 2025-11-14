@@ -1,5 +1,5 @@
 Flask
 Flask-WTF
 gunicorn
-supabase-py
+supabase
 python-dotenv

@@ -6,31 +6,26 @@ from werkzeug.utils import secure_filename
 from supabase import create_client, Client
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
+# 1. LOAD .env FILE
+load_dotenv() 
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'a_very_secret_fallback_key')
 csrf = CSRFProtect(app)
 
-# --- Supabase Configuration ---
+# --- Supabase Configuration (THE FIX) ---
 try:
     SUPABASE_URL = os.environ.get('SUPABASE_URL')
-    
-    # --- THIS IS THE FIX ---
-    # We MUST use the SERVICE_KEY for all backend actions.
-    # Your old file was using 'SUPABASE_KEY' (the anon key).
-    SUPABASE_SERVICE_KEY = os.environ.get('SUPABASE_SERVICE_KEY')
-    
+    # 2. USE THE SECRET SERVICE KEY (NOT THE PUBLIC KEY)
+    SUPABASE_KEY = os.environ.get('SUPABASE_SERVICE_KEY') 
     SUPABASE_BUCKET = os.environ.get('SUPABASE_BUCKET', 'product_images')
     
-    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+    if not SUPABASE_URL or not SUPABASE_KEY:
         raise ValueError("Supabase URL and SERVICE KEY must be set in environment variables.")
         
-    # Initialize the client with the powerful service key
-    supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
-    
-    print("Successfully connected to Supabase (using Service Role).")
+    # 3. Create the client with the admin key
+    supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+    print("Successfully connected to Supabase (with admin rights).")
 except Exception as e:
     print(f"Error initializing Supabase: {e}")
     supabase = None
@@ -66,16 +61,15 @@ def handle_image_upload(file, current_image_path=None):
         # We need to read the file's bytes to upload it
         file_bytes = file.read()
         
-        # Supabase storage path (e.g., "public/burger.jpg")
-        # Use a 'public' folder inside the bucket
-        storage_path = f"public/{filename}"
+        # Supabase storage path (e.g., "burger.jpg")
+        # Use a unique name to prevent overwrites, e.g., timestamp
+        storage_path = f"{os.urandom(8).hex()}_{filename}"
         
         # Upload the file
-        # This will now work because of our SQL policies and the service key
         supabase.storage.from_(SUPABASE_BUCKET).upload(
             path=storage_path,
             file=file_bytes,
-            file_options={"content-type": content_type, "upsert": "true"} # 'upsert' overwrites if file exists
+            file_options={"content-type": content_type, "upsert": "false"} 
         )
         
         # Get the public URL
@@ -97,15 +91,11 @@ def menu():
 
     try:
         if supabase:
-            # RLS is disabled on 'products', so this public read works
+            # Fetch all products from the 'products' table
             response = supabase.table('products').select('*').order('name').execute()
             products = response.data
             
             for product in products:
-                # This check ensures the image path is valid before adding
-                if not product.get('image_path'):
-                    product['image_path'] = DEFAULT_IMAGE_URL
-
                 category = product.get('category', UNCATEGORIZED)
                 if category in categories_dict:
                     categories_dict[category].append(product)
@@ -156,12 +146,8 @@ def admin():
     products = []
     try:
         if supabase:
-            # This works because our client uses the service_role key
             response = supabase.table('products').select('*').order('id', desc=True).execute()
             products = response.data
-            for product in products:
-                if not product.get('image_path'):
-                    product['image_path'] = DEFAULT_IMAGE_URL
     except Exception as e:
         print(f"Error fetching products for admin: {e}")
         flash(f"Could not load products: {e}", 'error')
@@ -187,7 +173,6 @@ def admin_add():
         }
         
         if supabase:
-            # This works because RLS is disabled on 'products'
             supabase.table('products').insert(new_product).execute()
             flash(f"تمت إضافة المنتج '{new_product['name']}' بنجاح!", 'success')
         
@@ -221,9 +206,8 @@ def admin_edit(product_id):
                 'image_path': image_path # This will be the new URL or the old one
             }
 
-            # This works because RLS is disabled on 'products'
             supabase.table('products').update(product_update).eq('id', product_id).execute()
-            flash(f"تم تعديل المنتج '{product_update['name']}' بنjاح!", 'success')
+            flash(f"تم تعديل المنتج '{product_update['name']}' بنجاح!", 'success')
 
     except Exception as e:
         print(f"Error editing product: {e}")
@@ -239,9 +223,8 @@ def admin_delete(product_id):
     
     try:
         if supabase:
-            # We don't need to delete the image from storage,
-            # but you could add that logic here if you want.
-            # This works because RLS is disabled on 'products'
+            # Optional: Delete the image from storage first (more complex)
+            # For now, just delete the database record
             supabase.table('products').delete().eq('id', product_id).execute()
             flash(f"تم حذف المنتج بنجاح!", 'success')
             
@@ -253,7 +236,5 @@ def admin_delete(product_id):
 
 # --- Main Run ---
 if __name__ == '__main__':
-    # This block is for LOCAL development (e.g., running 'python app.py')
-    # It runs a simple, non-production server.
     print("Starting Flask app in debug mode for local development...")
     app.run(debug=True, port=5000)
