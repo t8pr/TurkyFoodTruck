@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<!-- 
+    *** CHANGE ***
+    Added 'class="dark"' to the html tag.
+    This forces the entire site into dark mode.
+-->
+<html lang="ar" dir="rtl" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}منيو الديوان{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        /* Custom Styles */
+        body {
+            font-family: 'Tajawal', sans-serif;
+            /* Scroll-behavior for a smooth jump to categories */
+            scroll-behavior: smooth;
+        }
+        /* Custom button styling */
+        .btn-primary {
+            background-color: #7838e9;
+            color: #ffffff;
+            padding: 0.5rem 1.25rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: background-color 0.2s;
+        }
+        
+        .btn-primary:hover {
+            background-color: #652dbd;
+        }
+        .btn-danger {
+            background-color: #e53e3e;
+            color: #ffffff;
+            padding: 0.5rem 1.25rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: background-color 0.2s;
+        }
+        .btn-danger:hover {
+            background-color: #c53030;
+        }
+        /* Custom modal animation */
+        .modal-popup {
+            animation: fadeIn 0.3s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        /* Custom animation for menu items */
+        .product-card {
+            /* We will use this in JS */
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+        }
+        .product-card.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+    <script>
+        // Custom Tailwind config
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        // Your brand color
+                        primary: {
+                            // *** NEW ***
+                            // Added lighter shade for dark mode
+                            300: '#b391f4', 
+                            DEFAULT: '#7838e9',
+                        },
+                    },
+                    fontFamily: {
+                        sans: ['Tajawal', 'sans-serif'],
+                    },
+                },
+            },
+            // *** NEW ***
+            // This ensures dark mode classes work
+            darkMode: 'class',
+        }
+    </script>
+</head>
+<!-- 
+    *** CHANGE ***
+    Updated body background for light and dark modes.
+-->
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+    
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="fixed top-5 left-1/2 -translate-x-1/2 z-[100] w-full max-w-sm" id="flash-container">
+            {% for category, message in messages %}
+            <div class="p-4 mb-2 rounded-md shadow-lg {% if category == 'success' %}bg-green-500{% else %}bg-red-500{% endif %} text-white" role="alert">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        <script>
+            // Auto-hide flash messages
+            setTimeout(() => {
+                const flashContainer = document.getElementById('flash-container');
+                if (flashContainer) {
+                    flashContainer.style.transition = 'opacity 0.5s ease';
+                    flashContainer.style.opacity = '0';
+                    setTimeout(() => flashContainer.remove(), 500);
+                }
+            }, 3000);
+        </script>
+        {% endif %}
+    {% endwith %}
+    
+    {% block content %}
+    <!-- Content from other pages will be injected here -->
+    {% endblock %}
+</body>
+</html>

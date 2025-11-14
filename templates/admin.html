@@ -1,0 +1,395 @@
+{% extends 'layout.html' %}
+{% block title %}لوحة تحكم المدير{% endblock %}
+
+{% block content %}
+<!-- 
+    *** CHANGE ***
+    - Added dark mode classes: dark:bg-gray-800
+-->
+<nav class="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-50">
+    <div class="container mx-auto px-4">
+        <div class="flex justify-between items-center h-16">
+            <div class="flex-shrink-0 flex items-center">
+                <!-- 
+                    *** CHANGE ***
+                    - Added dark mode classes: dark:text-primary-300
+                -->
+                <span class="text-2xl font-bold text-primary dark:text-primary-300">لوحة تحكم المدير</span>
+            </div>
+            <div style="    display: flex;
+                            text-align: center;" >
+                <!-- 
+                    *** CHANGE ***
+                    - Added dark mode classes: dark:text-gray-300 dark:hover:text-primary-300
+                -->
+                <a href="{{ url_for('menu') }}" class="text-gray-600 hover:text-primary dark:text-gray-300 dark:hover:text-primary-300 px-3 py-2 rounded-md text-sm font-medium" target="_blank">عرض القائمة</a>
+                <a href="{{ url_for('logout') }}" class="ms-4 btn-danger py-2 px-4 text-sm">
+                    تسجيل الخروج
+                </a>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- Main Content -->
+<main class="container mx-auto p-4 md:p-8">
+    
+    <!-- Add Product Form -->
+    <div class="mb-8">
+        <!-- 
+            *** CHANGE ***
+            - Added dark mode classes: dark:bg-gray-800
+        -->
+        <details class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg transition-all" id="add-product-details">
+            <!-- 
+                *** CHANGE ***
+                - Added dark mode classes: dark:text-primary-300
+            -->
+            <summary class="text-2xl font-bold text-primary dark:text-primary-300 cursor-pointer list-none flex justify-between items-center">
+                <span>إضافة منتج جديد</span>
+                <!-- 
+                    *** CHANGE ***
+                    - Added dark mode classes: dark:stroke-gray-400
+                -->
+                <svg class="w-6 h-6 transition-transform details-arrow dark:stroke-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+            </summary>
+            <div class="pt-6">
+                <form action="{{ url_for('admin_add') }}" method="POST" class="space-y-4" enctype="multipart/form-data">
+                    <input style="padding: 5px 3px;" type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div>
+                        <label for="name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">اسم المنتج</label>
+                        <input style="padding: 5px 3px;" type="text" name="name" id="name" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-300 dark:focus:border-primary-300" placeholder="مثال: برجر الديوان">
+                    </div>
+                    <div>
+                        <label for="price" class="block text-sm font-medium text-gray-700 dark:text-gray-300">السعر</label>
+                        <input style="padding: 5px 3px;" type="number" name="price" id="price" step="0.01" min="0" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-300 dark:focus:border-primary-300" placeholder="مثال: 12.99">
+                    </div>
+                    <div>
+                        <label for="category" class="block text-sm font-medium text-gray-700 dark:text-gray-300">القسم</label>
+                        <select style="padding: 5px 3px;" id="category" name="category" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-300 dark:focus:border-primary-300">
+                            {% for cat in categories %}
+                                <option value="{{ cat }}">{{ cat }}</option>
+                            {% endfor %}
+                            <option value="غير مصنف">غير مصنف</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="description" class="block text-sm font-medium text-gray-700 dark:text-gray-300">الوصف</label>
+                        <textarea style="padding: 5px 3px;" name="description" id="description" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-300 dark:focus:border-primary-300" placeholder="وصف قصير وجذاب..."></textarea>
+                    </div>
+                    <div>
+                        <label for="image_file" class="block text-sm font-medium text-gray-700 dark:text-gray-300">ملف الصورة</label>
+                        <input type="file" name="image_file" id="image_file" accept="image/*" class="mt-1 block w-full text-sm text-gray-500 dark:text-gray-400
+                            file:me-4 file:py-2 file:px-4
+                            file:rounded-full file:border-0
+                            file:text-sm file:font-semibold
+                            file:bg-primary/10 file:text-primary
+                            dark:file:bg-primary/20 dark:file:text-primary-300
+                            hover:file:bg-primary/20 dark:hover:file:bg-primary/30">
+                    </div>
+                    <div class="text-left">
+                        <button type="submit" class="btn-primary">إضافة المنتج</button>
+                    </div>
+                </form>
+            </div>
+        </details>
+    </div>
+
+    <!-- Manage Products List -->
+    <!-- 
+        *** CHANGE ***
+        - Added dark mode classes: dark:text-white
+    -->
+    <h2 class="text-3xl font-bold text-gray-800 dark:text-white mb-6">إدارة المنتجات</h2>
+    <!-- 
+        *** CHANGE ***
+        - Added dark mode classes: dark:bg-gray-800
+    -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+        <div class="flex flex-col">
+            <div class="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+                <div class="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">
+                    <!-- 
+                        *** CHANGE ***
+                        - Added dark mode classes: dark:border-gray-700
+                    -->
+                    <div class="shadow overflow-hidden border-b border-gray-200 dark:border-gray-700 sm:rounded-lg">
+                        <!-- 
+                            *** CHANGE ***
+                            - Added dark mode classes: dark:divide-gray-700
+                        -->
+                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                            <!-- 
+                                *** CHANGE ***
+                                - Added dark mode classes: dark:bg-gray-700
+                            -->
+                            <thead class="bg-gray-50 dark:bg-gray-700">
+                                <tr>
+                                    <!-- 
+                                        *** CHANGE ***
+                                        - Added dark mode classes: dark:text-gray-300
+                                    -->
+                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">المنتج</th>
+                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">السعر</th>
+                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">القسم</th>
+                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">الوصف</th>
+                                    <th scope="col" class="relative px-6 py-3"><span class="sr-only">الإجراءات</span></th>
+                                </tr>
+                            </thead>
+                            <!-- 
+                                *** CHANGE ***
+                                - Added dark mode classes: dark:bg-gray-800 dark:divide-gray-700
+                            -->
+                            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                {% for product in products %}
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <div class="flex-shrink-0 h-10 w-10">
+                                                <img class="h-10 w-10 rounded-full object-cover" 
+                                                     src="{% if product.image_path.startswith('http') %}{{ product.image_path }}{% else %}{{ url_for('static', filename=product.image_path) }}{% endif %}" 
+                                                     alt="{{ product.name }}" 
+                                                     onerror="this.src='https://placehold.co/100x100/cccccc/ffffff?text=Img'; this.onerror=null;">
+                                            </div>
+                                            <div class="ms-4">
+                                                <!-- 
+                                                    *** CHANGE ***
+                                                    - Added dark mode classes: dark:text-white
+                                                -->
+                                                <div class="text-sm font-medium text-gray-900 dark:text-white">{{ product.name }}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <!-- 
+                                            *** CHANGE ***
+                                            - Added dark mode classes: dark:text-white
+                                        -->
+                                        <div class="text-sm text-gray-900 dark:text-white">${{ "%.2f"|format(product.price|float) }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <!-- 
+                                            *** CHANGE ***
+                                            - Added dark mode classes: dark:bg-primary/20 dark:text-primary-300
+                                        -->
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary-300">
+                                            {{ product.category | default('غير مصنف', true) }}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 max-w-sm">
+                                        <!-- 
+                                            *** CHANGE ***
+                                            - Added dark mode classes: dark:text-gray-400
+                                        -->
+                                        <p class="text-sm text-gray-600 dark:text-gray-400 truncate">{{ product.description }}</p>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-left text-sm font-medium">
+                                        <!-- 
+                                            *** CHANGE ***
+                                            - Added dark mode classes
+                                        -->
+                                        <button type="button" class="text-primary hover:text-indigo-900 dark:text-primary-300 dark:hover:text-primary-400 edit-btn"
+                                                data-id="{{ product.id }}"
+                                                data-name="{{ product.name }}"
+                                                data-price="{{ "%.2f"|format(product.price|float) }}"
+                                                data-description="{{ product.description | default('', true) }}"
+                                                data-category="{{ product.category | default('غير مصنف', true) }}">
+                                            تعديل
+                                        </button>
+                                        <!-- 
+                                            *** CHANGE ***
+                                            - Added dark mode classes
+                                        -->
+                                        <a href="{{ url_for('admin_delete', product_id=product.id) }}" class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-500 ms-4 delete-btn">حذف</a>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <!-- 
+                                        *** CHANGE ***
+                                        - Added dark mode classes: dark:text-gray-400
+                                    -->
+                                    <td colspan="5" class="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
+                                        لم يتم العثور على منتجات. أضف واحداً باستخدام النموذج أعلاه!
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- Edit Product Modal -->
+<div id="edit-modal" class="fixed inset-0 bg-gray-600 bg-opacity-75 dark:bg-opacity-80 overflow-y-auto h-full w-full z-50 hidden" onclick="closeEditModal()">
+    <!-- 
+        *** CHANGE ***
+        - Added dark mode classes
+    -->
+    <div class="relative top-20 mx-auto p-5 border w-full max-w-lg shadow-lg rounded-xl bg-white dark:bg-gray-800 modal-popup" onclick="event.stopPropagation()">
+        <!-- 
+            *** CHANGE ***
+            - Added dark mode classes
+        -->
+        <div class="flex justify-between items-center pb-3 border-b dark:border-gray-700">
+            <p class="text-2xl font-bold text-gray-800 dark:text-white">تعديل المنتج</p>
+            <button onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-3xl">&times;</button>
+        </div>
+        <form id="edit-form" method="POST" class="mt-6 space-y-4" enctype="multipart/form-data">
+            <input style="padding: 5px 3px;" type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div>
+                <label for="edit-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">اسم المنتج</label>
+                <input style="padding: 5px 3px;" type="text" name="name" id="edit-name" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-300 dark:focus:border-primary-300">
+            </div>
+            <div>
+                <label for="edit-price" class="block text-sm font-medium text-gray-700 dark:text-gray-300">السعر</label>
+                <input style="padding: 5px 3px;" type="number" name="price" id="edit-price" step="0.01" min="0" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-300 dark:focus:border-primary-300">
+            </div>
+            <div>
+                <label for="edit-category" class="block text-sm font-medium text-gray-700 dark:text-gray-300">القسم</label>
+                <select style="padding: 5px 3px;" id="edit-category" name="category" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-300 dark:focus:border-primary-300">
+                    {% for cat in categories %}
+                        <option value="{{ cat }}">{{ cat }}</option>
+                    {% endfor %}
+                    <option value="غير مصنف">غير مصنف</option>
+                </select>
+            </div>
+            <div>
+                <label for="edit-description" class="block text-sm font-medium text-gray-700 dark:text-gray-300">الوصف</label>
+                <textarea style="padding: 5px 3px;" name="description" id="edit-description" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-300 dark:focus:border-primary-300"></textarea>
+            </div>
+            <div>
+                <label for="edit-image_file" class="block text-sm font-medium text-gray-700 dark:text-gray-300">تحميل صورة جديدة (اختياري)</label>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">اتركه فارغاً للاحتفاظ بالصورة الحالية.</p>
+                <input type="file" name="image_file" id="edit-image_file" accept="image/*" class="mt-1 block w-full text-sm text-gray-500 dark:text-gray-400
+                    file:me-4 file:py-2 file:px-4
+                    file:rounded-full file:border-0
+                    file:text-sm file:font-semibold
+                    file:bg-primary/10 file:text-primary
+                    dark:file:bg-primary/20 dark:file:text-primary-300
+                    hover:file:bg-primary/20 dark:hover:file:bg-primary/30">
+            </div>
+            <input type="hidden" name="id" id="edit-id">
+            <div class="flex justify-end space-x-4">
+                <!-- 
+                    *** CHANGE ***
+                    - Added dark mode classes
+                -->
+                <button type="button" onclick="closeEditModal()" class="bg-gray-200 text-gray-800 py-2 px-4 rounded-lg font-semibold hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500">
+                    إلغاء
+                </button>
+                <button style="margin-right: 5px;" type="submit" class="btn-primary">
+                    حفظ التغييرات
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+<script>
+    // --- JavaScript for Admin Page ---
+
+    // 1. Edit Modal Logic (Global Variables & Functions)
+    const editModal = document.getElementById('edit-modal');
+    const editForm = document.getElementById('edit-form');
+    const editId = document.getElementById('edit-id');
+    const editName = document.getElementById('edit-name');
+    const editPrice = document.getElementById('edit-price');
+    const editDescription = document.getElementById('edit-description');
+    const editCategory = document.getElementById('edit-category');
+    const editImageFile = document.getElementById('edit-image_file');
+
+    function openEditModal(product) {
+        editForm.action = `/admin/edit/${product.id}`;
+        editId.value = product.id;
+        editName.value = product.name || '';
+        editPrice.value = parseFloat(product.price || 0).toFixed(2);
+        editDescription.value = product.description || '';
+        editCategory.value = product.category || 'غير مصنف';
+        editImageFile.value = null;
+        editModal.classList.remove('hidden');
+    }
+
+    function closeEditModal() {
+        editModal.classList.add('hidden');
+    }
+
+    // This wrapper ensures the script runs *after* the page is loaded.
+    document.addEventListener('DOMContentLoaded', function() {
+
+        // 2. Add-Product Accordion Arrow
+        const addProductDetails = document.getElementById('add-product-details');
+        if (addProductDetails) {
+            addProductDetails.addEventListener('toggle', (event) => {
+                const arrow = event.target.querySelector('.details-arrow');
+                if (event.target.open) {
+                    arrow.style.transform = 'rotate(180deg)';
+                } else {
+                    arrow.style.transform = 'rotate(0deg)';
+                }
+            });
+        }
+
+        // 3. Delete Confirmation
+        document.querySelectorAll('.delete-btn').forEach(button => {
+            button.addEventListener('click', function(event) {
+                event.preventDefault(); 
+                const deleteUrl = this.href;
+
+                // Create and show a custom confirmation modal
+                const confirmationModal = document.createElement('div');
+                confirmationModal.className = 'fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50';
+                // 
+                // *** CHANGE ***
+                // - Added dark mode classes to modal
+                //
+                confirmationModal.innerHTML = `
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl modal-popup" onclick="event.stopPropagation()">
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white">هل أنت متأكد؟</h3>
+                        <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">سيتم حذف هذا المنتج نهائياً.</p>
+                        <div class="mt-6 flex justify-end space-x-3">
+                            <button style='margin-left: 5px;' id="cancel-delete" class="bg-gray-200 text-gray-800 py-2 px-4 rounded-lg font-semibold hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500">
+                                إلغاء
+                            </button>
+                            <a href="${deleteUrl}" class="btn-danger py-2 px-4">
+                                حذف
+                            </a>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(confirmationModal);
+
+                document.getElementById('cancel-delete').addEventListener('click', () => {
+                    document.body.removeChild(confirmationModal);
+                });
+                confirmationModal.addEventListener('click', () => {
+                    document.body.removeChild(confirmationModal);
+                });
+            });
+        });
+
+        // 4. Edit Button Event Listener
+        document.querySelectorAll('.edit-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const product = {
+                    id: this.dataset.id,
+                    name: this.dataset.name,
+                    price: this.dataset.price,
+                    description: this.dataset.description,
+                    category: this.dataset.category
+                };
+                openEditModal(product);
+            });
+        });
+
+    }); // <-- End of DOMContentLoaded wrapper
+
+</script>
+{% endblock %}

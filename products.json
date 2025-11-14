@@ -1,0 +1,10 @@
+[
+  {
+    "id": 1,
+    "name": "ببسي",
+    "price": "4",
+    "description": "ببسي ببسي",
+    "category": "المشروبات",
+    "image_path": "uploads/pepse.jpeg"
+  }
+]
