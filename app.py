@@ -13,19 +13,17 @@ app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'a_very_secret_fallback_key')
 csrf = CSRFProtect(app)
 
-# --- Supabase Configuration (THE FIX) ---
+# --- Supabase Configuration ---
 try:
     SUPABASE_URL = os.environ.get('SUPABASE_URL')
-    # 2. USE THE SECRET SERVICE KEY (NOT THE PUBLIC KEY)
     SUPABASE_KEY = os.environ.get('SUPABASE_SERVICE_KEY') 
     SUPABASE_BUCKET = os.environ.get('SUPABASE_BUCKET', 'product_images')
     
     if not SUPABASE_URL or not SUPABASE_KEY:
         raise ValueError("Supabase URL and SERVICE KEY must be set in environment variables.")
         
-    # 3. Create the client with the admin key
     supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-    print("Successfully connected to Supabase (with admin rights).")
+    print("Successfully connected to Supabase.")
 except Exception as e:
     print(f"Error initializing Supabase: {e}")
     supabase = None
@@ -34,47 +32,39 @@ except Exception as e:
 ADMIN_USERNAME = 'turky'
 ADMIN_PASSWORD = 'Tt123123@@'
 
-# --- Categories ---
-CATEGORIES = [
-    "البطاطس",
-    "البليلة",
-    "الاندومي",
-    "المشروبات"
-]
 UNCATEGORIZED = "غير مصنف"
 DEFAULT_IMAGE_URL = "https://placehold.co/600x400/7838e9/ffffff?text=No+Image"
 
 # --- Helper Functions ---
+def get_categories():
+    """Fetches categories from DB sorted by sort_order."""
+    try:
+        if supabase:
+            response = supabase.table('categories').select('*').order('sort_order').execute()
+            # Return list of names
+            return response.data # returns [{'id':1, 'name': '...', 'sort_order': 10}, ...]
+    except Exception as e:
+        print(f"Error fetching categories: {e}")
+    return []
+
 def handle_image_upload(file, current_image_path=None):
-    """
-    Handles file upload to Supabase Storage.
-    Returns the public URL of the uploaded image or a default.
-    """
+    """Handles file upload to Supabase Storage."""
     if not file or file.filename == '':
         return current_image_path or DEFAULT_IMAGE_URL
 
     filename = secure_filename(file.filename)
-    # Get MIME type
     content_type = mimetypes.guess_type(filename)[0] or 'application/octet-stream'
     
     try:
-        # We need to read the file's bytes to upload it
         file_bytes = file.read()
-        
-        # Supabase storage path (e.g., "burger.jpg")
-        # Use a unique name to prevent overwrites, e.g., timestamp
         storage_path = f"{os.urandom(8).hex()}_{filename}"
         
-        # Upload the file
         supabase.storage.from_(SUPABASE_BUCKET).upload(
             path=storage_path,
             file=file_bytes,
             file_options={"content-type": content_type, "upsert": "false"} 
         )
-        
-        # Get the public URL
-        public_url = supabase.storage.from_(SUPABASE_BUCKET).get_public_url(storage_path)
-        return public_url
+        return supabase.storage.from_(SUPABASE_BUCKET).get_public_url(storage_path)
         
     except Exception as e:
         print(f"Error uploading to Supabase Storage: {e}")
@@ -86,12 +76,20 @@ def handle_image_upload(file, current_image_path=None):
 @app.route('/menu')
 def menu():
     """Displays the public food truck menu from Supabase."""
-    categories_dict = {cat: [] for cat in CATEGORIES}
+    
+    # 1. Fetch Categories from DB
+    db_categories = get_categories()
+    
+    # 2. Build Dictionary ordered by the DB sort_order
+    categories_dict = {}
+    for cat in db_categories:
+        categories_dict[cat['name']] = []
+    
     categories_dict[UNCATEGORIZED] = []
 
     try:
         if supabase:
-            # Fetch all products from the 'products' table
+            # Fetch all products
             response = supabase.table('products').select('*').order('name').execute()
             products = response.data
             
@@ -100,6 +98,7 @@ def menu():
                 if category in categories_dict:
                     categories_dict[category].append(product)
                 else:
+                    # If product has a category that was deleted from DB, put in Uncategorized
                     categories_dict[UNCATEGORIZED].append(product)
             
             # Filter out empty categories
@@ -108,7 +107,7 @@ def menu():
             return render_template('menu.html', categories=visible_categories, DEFAULT_IMAGE_URL=DEFAULT_IMAGE_URL)
         
     except Exception as e:
-        print(f"Error fetching products from Supabase: {e}")
+        print(f"Error fetching products: {e}")
         flash(f"Error loading menu: {e}", 'error')
         
     return render_template('menu.html', categories={}, DEFAULT_IMAGE_URL=DEFAULT_IMAGE_URL)
@@ -117,7 +116,6 @@ def menu():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    """Handles manager login."""
     error = None
     if request.method == 'POST':
         username = request.form.get('username')
@@ -127,42 +125,54 @@ def login():
             session['logged_in'] = True
             return redirect(url_for('admin'))
         else:
-            error = 'اسم المستخدم أو كلمة المرور غير صحيحة. يرجى المحاولة مرة أخرى.'
+            error = 'بيانات الدخول غير صحيحة.'
     
     return render_template('login.html', error=error)
 
 @app.route('/logout')
 def logout():
     session.pop('logged_in', None)
-    flash('تم تسجيل خروجك بنjاح.', 'info')
+    flash('تم تسجيل الخروج.', 'info')
     return redirect(url_for('menu'))
 
 @app.route('/admin')
 def admin():
-    """Shows the admin dashboard, fetching products from Supabase."""
+    """Shows the admin dashboard."""
     if not session.get('logged_in'):
         return redirect(url_for('login'))
     
     products = []
+    categories_data = []
+    
     try:
         if supabase:
-            response = supabase.table('products').select('*').order('id', desc=True).execute()
-            products = response.data
+            # Fetch products
+            prod_response = supabase.table('products').select('*').order('id', desc=True).execute()
+            products = prod_response.data
+            
+            # Fetch categories (Full object with ID and Order)
+            categories_data = get_categories()
+
     except Exception as e:
-        print(f"Error fetching products for admin: {e}")
-        flash(f"Could not load products: {e}", 'error')
+        print(f"Error fetching data: {e}")
+        flash(f"Could not load data: {e}", 'error')
+    
+    # Extract just names for the dropdown
+    category_names = [c['name'] for c in categories_data]
         
-    return render_template('admin.html', products=products, categories=CATEGORIES, DEFAULT_IMAGE_URL=DEFAULT_IMAGE_URL)
+    return render_template('admin.html', 
+                           products=products, 
+                           categories=category_names, # For the dropdown in Add/Edit Product
+                           all_categories=categories_data, # For the Manage Categories section
+                           DEFAULT_IMAGE_URL=DEFAULT_IMAGE_URL)
 
 @app.route('/admin/add', methods=['POST'])
 def admin_add():
-    """Adds a new product to the Supabase database."""
-    if not session.get('logged_in'):
-        return redirect(url_for('login'))
+    if not session.get('logged_in'): return redirect(url_for('login'))
 
     try:
         image_file = request.files.get('image_file')
-        image_path = handle_image_upload(image_file) # Uploads to Supabase
+        image_path = handle_image_upload(image_file)
 
         new_product = {
             'name': request.form.get('name', 'منتج جديد'),
@@ -174,67 +184,94 @@ def admin_add():
         
         if supabase:
             supabase.table('products').insert(new_product).execute()
-            flash(f"تمت إضافة المنتج '{new_product['name']}' بنجاح!", 'success')
+            flash('تمت الإضافة بنجاح', 'success')
         
     except Exception as e:
-        print(f"Error adding product: {e}")
-        flash(f"Error adding product: {e}", 'error')
+        flash(f"Error: {e}", 'error')
         
     return redirect(url_for('admin'))
 
 @app.route('/admin/edit/<int:product_id>', methods=['POST'])
 def admin_edit(product_id):
-    """Updates an existing product in the Supabase database."""
-    if not session.get('logged_in'):
-        return redirect(url_for('login'))
+    if not session.get('logged_in'): return redirect(url_for('login'))
     
     try:
         if supabase:
-            # First, get the existing product to find its current image path
             response = supabase.table('products').select('image_path').eq('id', product_id).single().execute()
             current_image = response.data.get('image_path') if response.data else DEFAULT_IMAGE_URL
             
-            # Handle image upload
             image_file = request.files.get('image_file')
-            image_path = handle_image_upload(image_file, current_image) # Pass current image as fallback
+            image_path = handle_image_upload(image_file, current_image)
 
             product_update = {
                 'name': request.form.get('name'),
                 'price': float(request.form.get('price')),
                 'description': request.form.get('description', ''),
                 'category': request.form.get('category', UNCATEGORIZED),
-                'image_path': image_path # This will be the new URL or the old one
+                'image_path': image_path
             }
 
             supabase.table('products').update(product_update).eq('id', product_id).execute()
-            flash(f"تم تعديل المنتج '{product_update['name']}' بنجاح!", 'success')
+            flash('تم التعديل بنجاح', 'success')
 
     except Exception as e:
-        print(f"Error editing product: {e}")
-        flash(f"Error editing product: {e}", 'error')
+        flash(f"Error: {e}", 'error')
         
     return redirect(url_for('admin'))
 
 @app.route('/admin/delete/<int:product_id>')
 def admin_delete(product_id):
-    """Deletes a product from the Supabase database."""
-    if not session.get('logged_in'):
-        return redirect(url_for('login'))
-    
+    if not session.get('logged_in'): return redirect(url_for('login'))
     try:
         if supabase:
-            # Optional: Delete the image from storage first (more complex)
-            # For now, just delete the database record
             supabase.table('products').delete().eq('id', product_id).execute()
-            flash(f"تم حذف المنتج بنجاح!", 'success')
-            
+            flash('تم الحذف بنجاح', 'success')
     except Exception as e:
-        print(f"Error deleting product: {e}")
-        flash(f"Error deleting product: {e}", 'error')
-        
+        flash(f"Error: {e}", 'error')
     return redirect(url_for('admin'))
 
-# --- Main Run ---
+# --- NEW: Category Management Routes ---
+
+@app.route('/admin/category/add', methods=['POST'])
+def add_category():
+    if not session.get('logged_in'): return redirect(url_for('login'))
+    try:
+        name = request.form.get('cat_name')
+        order = request.form.get('cat_order', 0)
+        if supabase and name:
+            supabase.table('categories').insert({'name': name, 'sort_order': order}).execute()
+            flash('تم إضافة القسم بنجاح', 'success')
+    except Exception as e:
+        flash(f"خطأ في إضافة القسم: {e}", 'error')
+    return redirect(url_for('admin'))
+
+@app.route('/admin/category/update', methods=['POST'])
+def update_categories():
+    """Updates the sort order of a category"""
+    if not session.get('logged_in'): return redirect(url_for('login'))
+    try:
+        cat_id = request.form.get('cat_id')
+        cat_order = request.form.get('cat_order')
+        
+        if supabase and cat_id:
+            supabase.table('categories').update({'sort_order': cat_order}).eq('id', cat_id).execute()
+            flash('تم تحديث الترتيب', 'success')
+    except Exception as e:
+        flash(f"Error: {e}", 'error')
+    return redirect(url_for('admin'))
+
+@app.route('/admin/category/delete/<int:cat_id>')
+def delete_category(cat_id):
+    if not session.get('logged_in'): return redirect(url_for('login'))
+    try:
+        if supabase:
+            # Optional: Check if products exist in this category before deleting?
+            # For now, we just delete. Products will become "Uncategorized" automatically in menu logic.
+            supabase.table('categories').delete().eq('id', cat_id).execute()
+            flash('تم حذف القسم', 'success')
+    except Exception as e:
+        flash(f"Error: {e}", 'error')
+    return redirect(url_for('admin'))
+
 if __name__ == '__main__':
-    print("Starting Flask app in debug mode for local development...")
     app.run(debug=True, port=5000)
